@@ -118,7 +118,7 @@ function stop(message, serverQueue) {
 }
 
 function play(guild, song) {
-
+    console.log("Reached Play...");
     const serverQueue = queue.get(guild.id);
 
     if (!song) {
