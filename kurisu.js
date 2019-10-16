@@ -93,7 +93,7 @@ async function execute(message, serverQueue) {
             play(message.guild, queueContruct.songs[0]);
         } catch (err) {
             console.log(err);
-            queue.delete(message.guild.id);]
+            queue.delete(message.guild.id);
             console.log("....");
             return message.channel.send(err);
         }
