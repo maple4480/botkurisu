@@ -85,16 +85,12 @@ async function execute(message, serverQueue) {
 
         queueContruct.songs.push(song);
         try {
-            console.log(".");
             var connection = await voiceChannel.join();
-            console.log("..");
             queueContruct.connection = connection;
-            console.log("...");
             play(message.guild, queueContruct.songs[0]);
         } catch (err) {
             console.log(err);
             queue.delete(message.guild.id);
-            console.log("....");
             return message.channel.send(err);
         }
     } else {
