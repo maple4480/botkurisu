@@ -5,6 +5,7 @@ const client = new Discord.Client();
 const youtube = new Youtube(process.env.GOOGLE_API);
 const queue = new Map();
 
+var repeat = false;
 /*************************************************************************************************************************************/
 //When application starts do this:
 client.on('ready', () => {
@@ -30,6 +31,13 @@ client.on('message', (message) => {
         return;
     } else if (message.content.startsWith("`song")) {
         currentPlaying(message, serverQueue);
+        return;
+    } else if (message.content.startsWith("`repeat")) {
+        repeatSong(message, serverQueue);
+        return;
+    }
+    else if (message.content.startsWith("`queue")) {
+        getQueue(message, serverQueue);
         return;
     }else {
         message.channel.send('You need to enter a valid command!')
@@ -127,7 +135,9 @@ function play(guild, song) {
     const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
         .on('end', () => {
             console.log('Music ended!');
-            serverQueue.songs.shift();
+            if (!repeat) {
+                serverQueue.songs.shift();
+            }
             play(guild, serverQueue.songs[0]);
         })
         .on('error', error => {
@@ -140,7 +150,28 @@ function currentPlaying(message, serverQueue) {
     message.channel.send('Currently Playing...' + serverQueue.songs[0].title);
 }
 /*************************************************************************************************************************************/
-
+function repeatSong(message, serverQueue) {
+    if (repeat) {
+        repeat = false;
+        message.channel.send('Will stop repeating...' + serverQueue.songs[0].title + 'until `repeat command is used again.');
+    }
+    else {
+        repeat = true;
+        message.channel.send('Repeating...' + serverQueue.songs[0].title + ' until `repeat command is used again.');
+    }
+}
+function getQueue(message, serverQueue) {
+    var q = "";
+    for (var i = 0; i < serverQueue.songs.length; i++) {
+        if (i == 0) {
+            q += '[**Currently Playing**] ' + serverQueue.songs[i].title + '\n';
+        }
+        else {
+            q += '[**' + i + '**] ' + serverQueue.songs[i].title + '\n';
+        }
+    }
+    message.channel.send('Current Queue:\n' + q);
+}
 client.login(process.env.BOT_TOKEN);
 
 
