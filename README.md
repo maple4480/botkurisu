@@ -1,0 +1,2 @@
+# botkurisu
+Kurisu Bot
