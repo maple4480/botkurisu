@@ -73,6 +73,7 @@ async function execute(message, serverQueue) {
     console.log(song.title +"...has been added.");
     //If there is no existing serverQ will create one. Otherwise add song to queue.
     if (!serverQueue) {
+        console.log(".");
         const queueContruct = {
             textChannel: message.channel,
             voiceChannel: voiceChannel,
@@ -81,11 +82,11 @@ async function execute(message, serverQueue) {
             volume: 5,
             playing: true,
         };
-
+        console.log("..");
         queue.set(message.guild.id, queueContruct);
 
         queueContruct.songs.push(song);
-
+        console.log("...");
         try {
             var connection = await voiceChannel.join();
             queueContruct.connection = connection;
@@ -96,6 +97,7 @@ async function execute(message, serverQueue) {
             return message.channel.send(err);
         }
     } else {
+        console.log("....");
         serverQueue.songs.push(song);
         console.log(serverQueue.songs);
         return message.channel.send(`${song.title} has been added to the queue!`);
@@ -118,7 +120,6 @@ function stop(message, serverQueue) {
 }
 
 function play(guild, song) {
-    console.log("Reached Play...");
     const serverQueue = queue.get(guild.id);
 
     if (!song) {
