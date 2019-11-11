@@ -39,7 +39,18 @@ client.on('message', (message) => {
     else if (message.content.startsWith("`queue")) {
         getQueue(message, serverQueue);
         return;
-    }else {
+    }
+    else if (message.content.startsWith("`help")) {
+        message.channel.send('```You can currently use the following commands: \n\
+            \`play [URL/Text to Search] \n\
+            \`skip -Skips current song in queue \n\
+            \`stop -Removes all song in queue \n\
+            \`song -Displays current song \n\
+            \`repeat -Repeat current song until this command is inputted again \n\
+            \`queue -Displays current queue of songs```');
+        return;
+    }
+    else {
         message.channel.send('You need to enter a valid command!')
     }
 
@@ -149,11 +160,10 @@ function play(guild, song) {
 function currentPlaying(message, serverQueue) {
     message.channel.send('Currently Playing...' + serverQueue.songs[0].title);
 }
-/*************************************************************************************************************************************/
 function repeatSong(message, serverQueue) {
     if (repeat) {
         repeat = false;
-        message.channel.send('Will stop repeating...' + serverQueue.songs[0].title + 'until `repeat command is used again.');
+        message.channel.send('Will stop repeating...' + serverQueue.songs[0].title + ' until `repeat command is used again.');
     }
     else {
         repeat = true;
@@ -164,14 +174,16 @@ function getQueue(message, serverQueue) {
     var q = "";
     for (var i = 0; i < serverQueue.songs.length; i++) {
         if (i == 0) {
-            q += '[**Currently Playing**] ' + serverQueue.songs[i].title + '\n';
+            q += '[Currently Playing] ' + serverQueue.songs[i].title + '\n';
         }
         else {
-            q += '[**' + i + '**] ' + serverQueue.songs[i].title + '\n';
+            q += '[' + i + '] ' + serverQueue.songs[i].title + '\n';
         }
     }
-    message.channel.send('Current Queue:\n' + q);
+    message.channel.send('```Current Queue:\n' + q + '```');
 }
+/*************************************************************************************************************************************/
+
 client.login(process.env.BOT_TOKEN);
 
 
