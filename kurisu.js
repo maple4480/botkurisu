@@ -10,6 +10,7 @@ var repeat = false;
 //When application starts do this:
 client.on('ready', () => {
     console.log('Bot is ready...Awaiting Input!');
+    client.user.setActivity(". For help: `help"); 
 });
 
 /*************************************************************************************************************************************/
@@ -40,6 +41,8 @@ client.on('message', (message) => {
         getQueue(message, serverQueue);
         return;
     }
+/*************************************************************************************************************************************/
+
     else if (message.content.startsWith("`help")) {
         message.channel.send('```You can currently use the following commands: \n\
             \`play [URL/Text to Search] \n\
@@ -50,6 +53,7 @@ client.on('message', (message) => {
             \`queue -Displays current queue of songs```');
         return;
     }
+
     else {
         message.channel.send('You need to enter a valid command!')
     }
