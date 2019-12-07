@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
+const ytpl = require('ytpl');
 const Youtube = require('simple-youtube-api');
 const client = new Discord.Client();
 const youtube = new Youtube(process.env.GOOGLE_API);
@@ -71,56 +72,115 @@ async function execute(message, serverQueue) {
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
         return message.channel.send('I need the permissions to join and speak in your voice channel!');
     }
+    ytpl(url, async function (err, playlist) {
+        if (err) {
+            try {
+                var video = await youtube.getVideo(url);
+            }
+            catch (error) {
+                try {
+                    var videos = await youtube.searchVideos(searchString, 1);
+                    var video = await youtube.getVideoByID(videos[0].id);
+                }
+                catch (err) {
+                    //console.log(err);
+                    message.channel.send('No video found.');
+                }
+            }
+            const song = {
+                id: video.id,
+                title: video.title,
+                url: `https://www.youtube.com/watch?v=${video.id}`
+            };
+            console.log(song.title + "...has been added.");
 
-    //Tries to use a link if not will perform youtube search.
-    try {
-        var video = await youtube.getVideo(url);
-    }
-    catch (error) {
-        try {
-            var videos = await youtube.searchVideos(searchString, 1);
-            var video = await youtube.getVideoByID(videos[0].id);
-        }
-        catch (err) {
-            //console.log(err);
-            message.channel.send('No video found.');
-        }
-    }
+            if (!serverQueue) {
+                const queueContruct = {
+                    textChannel: message.channel,
+                    voiceChannel: voiceChannel,
+                    connection: null,
+                    songs: [],
+                    volume: 5,
+                    playing: true,
+                };
 
-    const song = {
-        id: video.id,
-        title: video.title,
-        url: `https://www.youtube.com/watch?v=${video.id}`
-    };
-    //console.log(song.url);
-    console.log(song.title +"...has been added.");
-    //If there is no existing serverQ will create one. Otherwise add song to queue.
-    if (!serverQueue) {
-        const queueContruct = {
-            textChannel: message.channel,
-            voiceChannel: voiceChannel,
-            connection: null,
-            songs: [],
-            volume: 5,
-            playing: true,
-        };
-        queue.set(message.guild.id, queueContruct);
+                queue.set(message.guild.id, queueContruct);
+                queueContruct.songs.push(song);
 
-        queueContruct.songs.push(song);
-        try {
-            var connection = await voiceChannel.join();
-            queueContruct.connection = connection;
-            play(message.guild, queueContruct.songs[0]);
-        } catch (err) {
-            console.log(err);
-            queue.delete(message.guild.id);
-            return message.channel.send(err);
+                try {
+                    var connection = await voiceChannel.join();
+                    queueContruct.connection = connection;
+                    play(message.guild, queueContruct.songs[0]);
+                } catch (err) {
+                    //console.log(err);
+                    queue.delete(message.guild.id);
+                    return message.channel.send(err);
+                }
+            } else {
+                serverQueue.songs.push(song);
+                //console.log(serverQueue.songs);
+                return message.channel.send(`${song.title} has been added to the queue!`);
+            }
         }
-    } else {
-        serverQueue.songs.push(song);
-        console.log(serverQueue.songs);
-        return message.channel.send(`${song.title} has been added to the queue!`);
-    }
+        else {
+            console.log("Playlist detected: " + url);
+            if (!serverQueue) {
+
+                const queueContruct = {
+                    textChannel: message.channel,
+                    voiceChannel: voiceChannel,
+                    connection: null,
+                    songs: [],
+                    volume: 5,
+                    playing: true,
+                };
+
+                queue.set(message.guild.id, queueContruct);
+
+                playlist['items'].forEach(function (item, index) {
+                    try {
+                        const song = {
+                            id: item['id'],
+                            title: item['title'],
+                            url: `https://www.youtube.com/watch?v=${item.id}`
+                        };
+
+                        queueContruct.songs.push(song);
+                    } catch (err) {
+                        console.log(err);
+                    }
+
+                });
+                console.log(playlist);
+                console.log(playlist['title']);
+                message.channel.send(`**${playlist['title']}** has been added to the queue!`);
+                try {
+                    //console.log("First song is: " + queueContruct.songs[0]);
+                    var connection = await voiceChannel.join();
+                    queueContruct.connection = connection;
+                    play(message.guild, queueContruct.songs[0]);
+                } catch (err) {
+                    console.log("ERROR: Playlist/Joining, playing first playlist song.");
+                    queue.delete(message.guild.id);
+                    return message.channel.send(err);
+                }
+
+            } else {
+                playlist['items'].forEach(function (item, index) {
+                    const song = {
+                        id: item['id'],
+                        title: item['title'],
+                        url: `https://www.youtube.com/watch?v=${item.id}`
+                    };
+                    serverQueue.songs.push(song);
+                    //count = index + 1; //Starts at 0 so add 1 to show correct count.
+                });
+            }
+
+        }
+    });
+
+    
 
 }
 
@@ -150,6 +210,12 @@ function play(guild, song) {
     const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
         .on('end', () => {
             console.log('Music ended!');
+            if (serverQueue.voiceChannel.members.array().length <= 1) {
+                console.log("NO one is in voice channel.. Leaving...");
+                serverQueue.voiceChannel.leave();
+                queue.delete(guild.id);
+                return;
+            }
             if (!repeat) {
                 serverQueue.songs.shift();
             }
@@ -175,16 +241,26 @@ function repeatSong(message, serverQueue) {
     }
 }
 function getQueue(message, serverQueue) {
-    var q = "";
-    for (var i = 0; i < serverQueue.songs.length; i++) {
-        if (i == 0) {
-            q += '[Currently Playing] ' + serverQueue.songs[i].title + '\n';
+    try {
+        var q = "";
+        for (var i = 0; i < serverQueue.songs.length; i++) {
+            if (i == 0) {
+                q += '[Currently Playing] ' + serverQueue.songs[i].title + '\n';
+            }
+            else {
+                q += '[' + i + '] ' + serverQueue.songs[i].title + '\n';
+            }
+            if (i == 10) {
+                q += '[...' + serverQueue.songs.length + ' more]\n';
+                break;
+            }
         }
-        else {
-            q += '[' + i + '] ' + serverQueue.songs[i].title + '\n';
-        }
+        message.channel.send('```Current Queue:\n' + q + '```');
     }
-    message.channel.send('```Current Queue:\n' + q + '```');
+    catch (err) {
+        console.log("Error: Trying to get Queue");
+        message.channel.send("Queue is Empty");
+    }
 }
 /*************************************************************************************************************************************/
 
