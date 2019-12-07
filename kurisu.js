@@ -139,13 +139,14 @@ async function execute(message, serverQueue) {
 
                 playlist['items'].forEach(function (item, index) {
                     try {
-                        const song = {
-                            id: item['id'],
-                            title: item['title'],
-                            url: `https://www.youtube.com/watch?v=${item.id}`
-                        };
-
-                        queueContruct.songs.push(song);
+                        if (item['duration']) {
+                            const song = {
+                                id: item['id'],
+                                title: item['title'],
+                                url: `https://www.youtube.com/watch?v=${item.id}`
+                            };
+                            queueContruct.songs.push(song);
+                        }
                     } catch (err) {
                         console.log(err);
                     }
@@ -165,12 +166,14 @@ async function execute(message, serverQueue) {
 
             } else {
                 playlist['items'].forEach(function (item, index) {
-                    const song = {
-                        id: item['id'],
-                        title: item['title'],
-                        url: `https://www.youtube.com/watch?v=${item.id}`
-                    };
-                    serverQueue.songs.push(song);
+                    if (item['duration']) {
+                        const song = {
+                            id: item['id'],
+                            title: item['title'],
+                            url: `https://www.youtube.com/watch?v=${item.id}`
+                        };
+                        serverQueue.songs.push(song);
+                    }
                     //count = index + 1; //Starts at 0 so add 1 to show correct count.
                 });
             }
