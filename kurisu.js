@@ -151,8 +151,6 @@ async function execute(message, serverQueue) {
                     }
 
                 });
-                console.log(playlist);
-                console.log(playlist['title']);
                 message.channel.send(`**${playlist['title']}** has been added to the queue!`);
                 try {
                     //console.log("First song is: " + queueContruct.songs[0]);
