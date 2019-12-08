@@ -46,7 +46,7 @@ client.on('message', (message) => {
         getQueue(message, serverQueue);
         return;
     }
-    else if (message.content.startsWith("`degenerate")) {
+    else if (message.content.startsWith("`degen")) {
         message.content = '`play ' + degen;
         execute(message, serverQueue);
         return;
@@ -61,7 +61,7 @@ client.on('message', (message) => {
             \`song -Displays current song \n\
             \`repeat -Repeat current song until this command is inputted again \n\
             \`queue -Displays current queue of songs \n\
-            \`degenerate -Plays degenerate playlist```');
+            \`degen -Plays degenerate playlist```');
         return;
     }
 
