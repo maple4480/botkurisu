@@ -52,7 +52,10 @@ client.on('message', (message) => {
         return;
     }
 /*************************************************************************************************************************************/
-
+    else if (message.content.startsWith("`shuffle")) {
+        shuffle(message, serverQueue);
+        return;
+    }
     else if (message.content.startsWith("`help")) {
         message.channel.send('```You can currently use the following commands: \n\
             \`play [URL/Text to Search] \n\
@@ -61,6 +64,7 @@ client.on('message', (message) => {
             \`song -Displays current song \n\
             \`repeat -Repeat current song until this command is inputted again \n\
             \`queue -Displays current queue of songs \n\
+            \`shuffle -Shuffles queue of songs \n\
             \`degen -Plays degenerate playlist```');
         return;
     }
@@ -279,6 +283,19 @@ function getQueue(message, serverQueue) {
     }
 }
 /*************************************************************************************************************************************/
+function shuffle(message, serverQueue) {
+    for (let i = serverQueue.songs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * i);
+        if (j == 0) {
+            continue;
+        }
+        const temp = serverQueue.songs[i];
+        serverQueue.songs[i] = serverQueue.songs[j];
+        serverQueue.songs[j] = temp;
+    }
+    message.channel.send("Queue has been shuffled.");
+    console.log("Queue shuffling completed.");
+}
 
 client.login(process.env.BOT_TOKEN);
 
