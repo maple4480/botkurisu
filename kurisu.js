@@ -7,6 +7,10 @@ const youtube = new Youtube(process.env.GOOGLE_API);
 const queue = new Map();
 
 var repeat = false;
+const {
+    degen,
+    steinGate,
+} = require('./playlist.json');
 /*************************************************************************************************************************************/
 //When application starts do this:
 client.on('ready', () => {
@@ -42,6 +46,11 @@ client.on('message', (message) => {
         getQueue(message, serverQueue);
         return;
     }
+    else if (message.content.startsWith("`degenerate")) {
+        message.content = '`play ' + degen;
+        execute(message, serverQueue);
+        return;
+    }
 /*************************************************************************************************************************************/
 
     else if (message.content.startsWith("`help")) {
@@ -51,7 +60,8 @@ client.on('message', (message) => {
             \`stop -Removes all song in queue \n\
             \`song -Displays current song \n\
             \`repeat -Repeat current song until this command is inputted again \n\
-            \`queue -Displays current queue of songs```');
+            \`queue -Displays current queue of songs \n\
+            \`degenerate -Plays degenerate playlist```');
         return;
     }
 
@@ -152,7 +162,7 @@ async function execute(message, serverQueue) {
                     }
 
                 });
-                message.channel.send(`**${playlist['title']}** has been added to the queue!`);
+                message.channel.send(`**${playlist['title']}** playlist has been added to the queue!`);
                 try {
                     //console.log("First song is: " + queueContruct.songs[0]);
                     var connection = await voiceChannel.join();
@@ -174,8 +184,8 @@ async function execute(message, serverQueue) {
                         };
                         serverQueue.songs.push(song);
                     }
-                    //count = index + 1; //Starts at 0 so add 1 to show correct count.
                 });
+                message.channel.send(`**${playlist['title']}** playlist has been added to the queue!`);
             }
 
         }
@@ -188,6 +198,7 @@ async function execute(message, serverQueue) {
 function skip(message, serverQueue) {
     if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
     if (!serverQueue) return message.channel.send('There is no song that I could skip!');
+    console.log("Now skipping current song...");
     serverQueue.connection.dispatcher.end();
     message.channel.send('Skipping the current song!');
 }
@@ -203,23 +214,27 @@ function play(guild, song) {
     const serverQueue = queue.get(guild.id);
 
     if (!song) {
+        console.log('No more songs to play now exiting...');
         serverQueue.voiceChannel.leave();
         queue.delete(guild.id);
         return;
     }
+    console.log(song.title + ' is now playing!');
 
     const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
         .on('end', () => {
-            console.log('Music ended!');
+            console.log(song.title + ' ended!');
             if (serverQueue.voiceChannel.members.array().length <= 1) {
                 console.log("NO one is in voice channel.. Leaving...");
                 serverQueue.voiceChannel.leave();
                 queue.delete(guild.id);
                 return;
             }
+            console.log('There is still someone in the voice channel.. will continue playing.');
             if (!repeat) {
                 serverQueue.songs.shift();
             }
+            console.log('Playing next song...');
             play(guild, serverQueue.songs[0]);
         })
         .on('error', error => {
