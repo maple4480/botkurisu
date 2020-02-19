@@ -88,6 +88,7 @@ async function execute(message, serverQueue) {
     }
     ytpl(url, async function (err, playlist) {
         if (err) {
+            console.log('Single video found. Now attemping to gather information.');
             try {
                 var video = await youtube.getVideo(url);
             }
@@ -97,8 +98,9 @@ async function execute(message, serverQueue) {
                     var video = await youtube.getVideoByID(videos[0].id);
                 }
                 catch (err) {
-                    //console.log(err);
+                    console.log("ERROR: No video found. Will now stop searching for a video from: " + url);
                     message.channel.send('No video found.');
+                    return;
                 }
             }
             const song = {
@@ -126,13 +128,19 @@ async function execute(message, serverQueue) {
                     queueContruct.connection = connection;
                     play(message.guild, queueContruct.songs[0]);
                 } catch (err) {
-                    //console.log(err);
+                    console.log('ERROR: Unable to establish connection and play first song. ' + err);
                     queue.delete(message.guild.id);
                     return message.channel.send(err);
                 }
             } else {
-                serverQueue.songs.push(song);
-                //console.log(serverQueue.songs);
+                try {
+                    serverQueue.songs.push(song);
+                }
+                catch (err) {
+                    console.log("ERROR: Unable to add song to queue. " + err);
+                    message.channel.send("Unable to add the video to queue.");
+                    return;
+                }
                 return message.channel.send(`${song.title} has been added to the queue!`);
             }
         }
@@ -174,6 +182,7 @@ async function execute(message, serverQueue) {
                     play(message.guild, queueContruct.songs[0]);
                 } catch (err) {
                     console.log("ERROR: Playlist/Joining, playing first playlist song.");
+                    message.channel.send('I am unable to join, or start the music...');
                     queue.delete(message.guild.id);
                     return message.channel.send(err);
                 }
@@ -200,18 +209,31 @@ async function execute(message, serverQueue) {
 }
 
 function skip(message, serverQueue) {
-    if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
-    if (!serverQueue) return message.channel.send('There is no song that I could skip!');
-    console.log("Now skipping current song...");
-    serverQueue.connection.dispatcher.end();
-    message.channel.send('Skipping the current song!');
+    try {
+        if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
+        if (!serverQueue) return message.channel.send('There is no song that I could skip!');
+        console.log("Now skipping current song.");
+        serverQueue.connection.dispatcher.end();
+        message.channel.send('Skipping the current song!');
+    }
+    catch (err) {
+        console.log("ERROR: Unable to skip current song! " + err);
+        message.channel.send('Unable to skip current song.');
+    }
 }
 
 function stop(message, serverQueue) {
-    if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
-    serverQueue.songs = [];
-    serverQueue.connection.dispatcher.end();
-    message.channel.send('Queue ended. Leaving the voice channel.');
+    try {
+        if (!message.member.voiceChannel) return message.channel.send('You have to be in a voice channel to stop the music!');
+        serverQueue.songs = [];
+        serverQueue.connection.dispatcher.end();
+        message.channel.send('Stop requested. Leaving the voice channel.');
+        console.log('Stop requested. Leaving the voice channel.');
+    }
+    catch (err) {
+        console.log('ERROR: Unable to stop the music. ' + err);
+        message.channel.send('Stop requested. But Unable to complete request.');
+    }
 }
 
 function play(guild, song) {
@@ -282,20 +304,26 @@ function getQueue(message, serverQueue) {
         message.channel.send("Queue is Empty");
     }
 }
-/*************************************************************************************************************************************/
 function shuffle(message, serverQueue) {
-    for (let i = serverQueue.songs.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * i);
-        if (j == 0) {
-            continue;
+    try {
+        for (let i = serverQueue.songs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * i);
+            if (j == 0) {
+                continue;
+            }
+            const temp = serverQueue.songs[i];
+            serverQueue.songs[i] = serverQueue.songs[j];
+            serverQueue.songs[j] = temp;
         }
-        const temp = serverQueue.songs[i];
-        serverQueue.songs[i] = serverQueue.songs[j];
-        serverQueue.songs[j] = temp;
+        message.channel.send("Queue has been shuffled.");
+        console.log("Queue shuffling completed.");
     }
-    message.channel.send("Queue has been shuffled.");
-    console.log("Queue shuffling completed.");
+    catch (err) {
+        console.log("ERROR: Unable to shuffle");
+        message.channel.send("There was a problem shuffling.");
+    }
 }
+/*************************************************************************************************************************************/
 
 client.login(process.env.BOT_TOKEN);
 
