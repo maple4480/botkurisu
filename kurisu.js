@@ -259,12 +259,12 @@ function stop(message, serverQueue) {
 function play(guild, song) {
     const serverQueue = queue.get(guild.id);
 
-    if (!song) {
+    /*if (!song) {
         console.log('No more songs to play now exiting...');
         serverQueue.voiceChannel.leave();
         queue.delete(guild.id);
         return;
-    }
+    }*/
     console.log(song.title + ' is now playing!');
 
     const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
@@ -351,7 +351,9 @@ function shuffle(message, serverQueue) {
     }
 }
 function display(message, text) {
-    try {
+    /*
+     * Will add a random quote from quote.json
+     * try {
         if (Math.floor((Math.random() * 10) + 1) <= 4) {
             var q = Math.floor((Math.random() * quote.length));
             text = quote[q] + " And... " + text;
@@ -359,7 +361,7 @@ function display(message, text) {
     }
     catch (err) {
         console.log("ERROR: Unable to add quote.");
-    }
+    }*/
     message.channel.send(text);
     return;
 }
@@ -367,6 +369,7 @@ function pause(message) {
     console.log("Command to pause..");
     try {
         eventHandler.emit('pause');
+        display(message, "ZA WARUDO");
     }
     catch (error) {
         console.log("ERROR: Trying to pause music.");
@@ -377,6 +380,7 @@ function resume(message) {
     console.log("Command to resume..");
     try {
         eventHandler.emit('resume');
+        display(message, "Now Resuming..");
     }
     catch (error) {
         console.log("ERROR: Trying to resume music.");
