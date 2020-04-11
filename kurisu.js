@@ -63,6 +63,14 @@ client.on('message', (message) => {
         shuffle(message, serverQueue);
         return;
     }
+    else if (message.content.startsWith("`pause")) {
+        pause(message);
+        return;
+    }
+    else if (message.content.startsWith("`resume")) {
+        resume(message);
+        return;
+    }
     else if (message.content.startsWith("`help")) {
         display(message, '```You can currently use the following commands: \n\
             \`play [URL/Text to Search] \n\
