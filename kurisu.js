@@ -7,6 +7,9 @@ const youtube = new Youtube(process.env.GOOGLE_API);
 const queue = new Map();
 
 var repeat = false;
+var events = require('events');
+var eventHandler = new events.EventEmitter();
+
 const {
     degen,
     steinGate,
@@ -69,7 +72,9 @@ client.on('message', (message) => {
             \`repeat -Repeat current song until this command is inputted again \n\
             \`queue -Displays current queue of songs \n\
             \`shuffle -Shuffles queue of songs \n\
-            \`degen -Plays degenerate playlist```');
+            \`degen -Plays degenerate playlist \n\
+            \`pause -Pauses the current song \n\
+            \`resume -Will resume music```');
         return;
     }
 
@@ -113,6 +118,7 @@ async function execute(message, serverQueue) {
                 url: `https://www.youtube.com/watch?v=${video.id}`
             };
             console.log(song.title + "...has been added.");
+            display(message, song.title + "...has been added.");
 
             if (!serverQueue) {
                 const queueContruct = {
@@ -274,6 +280,13 @@ function play(guild, song) {
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 
+    eventHandler.on('pause', function () {
+        dispatcher.pause();
+    });
+    eventHandler.on('resume', function () {
+        dispatcher.resume();
+    });
+
 }
 function currentPlaying(message, serverQueue) {
     display(message, 'Currently Playing...' + serverQueue.songs[0].title);
@@ -329,15 +342,40 @@ function shuffle(message, serverQueue) {
         display(message, "There was a problem shuffling.");
     }
 }
-/*************************************************************************************************************************************/
 function display(message, text) {
-    if (Math.floor((Math.random() * 10) + 1) <= 4) {
-        var q = Math.floor((Math.random() * quote.length));
-        text = quote[q] + " And... " + text;
+    try {
+        if (Math.floor((Math.random() * 10) + 1) <= 4) {
+            var q = Math.floor((Math.random() * quote.length));
+            text = quote[q] + " And... " + text;
+        }
+    }
+    catch (err) {
+        console.log("ERROR: Unable to add quote.");
     }
     message.channel.send(text);
     return;
 }
+function pause(message) {
+    console.log("Command to pause..");
+    try {
+        eventHandler.emit('pause');
+    }
+    catch (error) {
+        console.log("ERROR: Trying to pause music.");
+    }
+    return;
+}
+function resume(message) {
+    console.log("Command to resume..");
+    try {
+        eventHandler.emit('resume');
+    }
+    catch (error) {
+        console.log("ERROR: Trying to resume music.");
+    }
+    return;
+}
+/*************************************************************************************************************************************/
 
 client.login(process.env.BOT_TOKEN);
 
