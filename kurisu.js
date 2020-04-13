@@ -5,6 +5,7 @@ const Youtube = require('simple-youtube-api');
 const client = new Discord.Client();
 const youtube = new Youtube(process.env.GOOGLE_API);
 const queue = new Map();
+const botID = process.env.BOT_ID;
 
 var repeat = false;
 var events = require('events');
@@ -296,10 +297,13 @@ function play(guild, song) {
     const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
         .on('end', () => {
             console.log('Current Song ended.');
-            if (serverQueue.voiceChannel.members.array().length <= 1) {
-                console.log("NO one is in voice channel.. Leaving...");
+
+            if (serverQueue.voiceChannel.members.array().length <= 1
+                || serverQueue.voiceChannel.members.get(botID) === undefined) {
+                console.log("No one in voice but me Or...I've been disconnected. Clearing Resources.");
                 serverQueue.voiceChannel.leave();
                 queue.delete(guild.id);
+                console.log('Resources cleared.');
                 return;
             }
             
