@@ -9,6 +9,8 @@ const queue = new Map();
 var repeat = false;
 var events = require('events');
 var eventHandler = new events.EventEmitter();
+var currentPlaying = false;
+var timeoutID;
 
 const {
     degen,
@@ -126,7 +128,6 @@ async function execute(message, serverQueue) {
                 url: `https://www.youtube.com/watch?v=${video.id}`
             };
             console.log(song.title + "...has been added.");
-            display(message, song.title + "...has been added.");
 
             if (!serverQueue) {
                 const queueContruct = {
@@ -140,9 +141,13 @@ async function execute(message, serverQueue) {
 
                 queue.set(message.guild.id, queueContruct);
                 queueContruct.songs.push(song);
+                display(message, song.title + "...has been added.");
 
                 try {
+                    voiceChannel.leave();
+                    console.log('Trying to join channel.');
                     var connection = await voiceChannel.join();
+                    console.log('Channel joined.');
                     queueContruct.connection = connection;
                     play(message.guild, queueContruct.songs[0]);
                 } catch (err) {
@@ -153,6 +158,14 @@ async function execute(message, serverQueue) {
             } else {
                 try {
                     serverQueue.songs.push(song);
+                    if (!currentPlaying) {
+                        voiceChannel.leave();
+                        console.log('Trying to join channel.');
+                        var connection = await voiceChannel.join();
+                        console.log('Channel joined.');
+                        serverQueue.connection = connection;
+                        play(message.guild, serverQueue.songs[0]);
+                    }
                 }
                 catch (err) {
                     console.log("ERROR: Unable to add song to queue. " + err);
@@ -196,7 +209,10 @@ async function execute(message, serverQueue) {
                 //shuffle(message, queueContruct);
                 try {
                     //console.log("First song is: " + queueContruct.songs[0]);
+                    voiceChannel.leave();
+                    console.log('Trying to join channel.');
                     var connection = await voiceChannel.join();
+                    console.log('Channel joined.');
                     queueContruct.connection = connection;
                     play(message.guild, queueContruct.songs[0]);
                 } catch (err) {
@@ -218,7 +234,6 @@ async function execute(message, serverQueue) {
                     }
                 });
                 display(message, `**${playlist['title']}** playlist has been added to the queue!`);
-                //shuffle(message, queueContruct);
             }
 
         }
@@ -247,8 +262,10 @@ function stop(message, serverQueue) {
         if (!message.member.voiceChannel) return display(message, 'You have to be in a voice channel to stop the music!');
         serverQueue.songs = [];
         serverQueue.connection.dispatcher.end();
-        display(message, 'Stop requested. Leaving the voice channel.');
-        console.log('Stop requested. Leaving the voice channel.');
+
+        queue.clear();
+        display(message, 'Stop requested.');
+        console.log('Stop requested.');
     }
     catch (err) {
         console.log('ERROR: Unable to stop the music. ' + err);
@@ -259,24 +276,33 @@ function stop(message, serverQueue) {
 function play(guild, song) {
     const serverQueue = queue.get(guild.id);
 
-    /*if (!song) {
-        console.log('No more songs to play now exiting...');
-        serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
+    if (!song) {
+        console.log('No more songs left to play.');
+        currentPlaying = false;
+        timeoutID = setTimeout(function () {
+            console.log('Waited long enough, now exiting...');
+            serverQueue.voiceChannel.leave();
+            queue.delete(guild.id);
+        }, 300000);
+        console.log("Initiated time out ");
         return;
-    }*/
+    }
     console.log(song.title + ' is now playing!');
+    clearTimeout(timeoutID);
+    console.log('Terminated time out...');
+
+    currentPlaying = true;
 
     const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
         .on('end', () => {
-            console.log(song.title + ' ended!');
+            console.log('Current Song ended.');
             if (serverQueue.voiceChannel.members.array().length <= 1) {
                 console.log("NO one is in voice channel.. Leaving...");
                 serverQueue.voiceChannel.leave();
                 queue.delete(guild.id);
                 return;
             }
-            console.log('There is still someone in the voice channel.. will continue playing.');
+            
             if (!repeat) {
                 serverQueue.songs.shift();
             }
@@ -284,7 +310,7 @@ function play(guild, song) {
             play(guild, serverQueue.songs[0]);
         })
         .on('error', error => {
-            console.error(error);
+            console.error("Error in dispatcher: " + error);
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 
