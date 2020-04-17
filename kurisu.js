@@ -318,12 +318,16 @@ function play(guild, song) {
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 
-    eventHandler.on('pause', function () {
-        dispatcher.pause();
-    });
-    eventHandler.on('resume', function () {
-        dispatcher.resume();
-    });
+    if (eventHandler.listeners('pause').length == 0) {
+        eventHandler.on('pause', function () {
+            dispatcher.pause();
+        });
+    }
+    if (eventHandler.listeners('resume').length == 0) {
+        eventHandler.on('resume', function () {
+            dispatcher.resume();
+        });
+    }
 
 }
 function currentPlaying(message, serverQueue) {
