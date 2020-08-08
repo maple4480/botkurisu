@@ -26,6 +26,17 @@ const {
 client.on('ready', () => {
     console.log('Bot is ready...Awaiting Input!');
     client.user.setActivity(". For help: `help"); 
+
+    if (eventHandler.listeners('pause').length == 0) {
+        eventHandler.on('pause', function () {
+            dispatcher.pause();
+        });
+    }
+    if (eventHandler.listeners('resume').length == 0) {
+        eventHandler.on('resume', function () {
+            dispatcher.resume();
+        });
+    }
 });
 
 /*************************************************************************************************************************************/
@@ -322,7 +333,7 @@ async function play(guild, song) {
                 console.error("Error in dispatcher: " + error);
             });
         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-
+        /* trying to move..
         if (eventHandler.listeners('pause').length == 0) {
             eventHandler.on('pause', function () {
                 dispatcher.pause();
@@ -333,8 +344,9 @@ async function play(guild, song) {
                 dispatcher.resume();
             });
         }
+        */
     }
-    catch (err) {
+    catch(err) {
             console.log("ERROR with play method: "+err)
     }
 
@@ -412,7 +424,7 @@ function pause(message) {
     console.log("Command to pause..");
     try {
         eventHandler.emit('pause');
-        display(message, "ZA WARUDO");
+        display(message, "Paused!");
     }
     catch (error) {
         console.log("ERROR: Trying to pause music.");
