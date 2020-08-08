@@ -298,40 +298,44 @@ async function play(guild, song) {
     currentPlaying = true;
     DateTime = new Date();
     console.log(DateTime.getHours() % 12 + ':' + DateTime.getMinutes() + ' - Will now play.');
-    const dispatcher = serverQueue.connection.play(await ytdl(song.url, { filter: format => ['251'], highWaterMark: 1 << 25 }), { type: 'opus' })
-        .on('finish', () => {
-            console.log('Current Song ended.');
+    try {
+        const dispatcher = serverQueue.connection.play(await ytdl(song.url, { filter: format => ['251'], highWaterMark: 1 << 25 }), { type: 'opus' })
+            .on('finish', () => {
+                console.log('Current Song ended.');
 
-            if (serverQueue.voiceChannel.members.array().length <= 1
-                || serverQueue.voiceChannel.members.get(botID) === undefined) {
-                console.log("No one in voice but me Or...I've been disconnected. Clearing Resources.");
-                serverQueue.voiceChannel.leave();
-                queue.delete(guild.id);
-                console.log('Resources cleared.');
-                return;
-            }
+                if (serverQueue.voiceChannel.members.array().length <= 1
+                    || serverQueue.voiceChannel.members.get(botID) === undefined) {
+                    console.log("No one in voice but me Or...I've been disconnected. Clearing Resources.");
+                    serverQueue.voiceChannel.leave();
+                    queue.delete(guild.id);
+                    console.log('Resources cleared.');
+                    return;
+                }
             
-            if (!repeat) {
-                serverQueue.songs.shift();
-            }
-            console.log('Playing next song...');
-            play(guild, serverQueue.songs[0]);
-        })
-        .on('error', error => {
-            console.error("Error in dispatcher: " + error);
-        });
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+                if (!repeat) {
+                    serverQueue.songs.shift();
+                }
+                console.log('Playing next song...');
+                play(guild, serverQueue.songs[0]);
+            })
+            .on('error', error => {
+                console.error("Error in dispatcher: " + error);
+            });
+        dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
 
-    if (eventHandler.listeners('pause').length == 0) {
-        eventHandler.on('pause', function () {
-            dispatcher.pause();
-        });
-    }
-    if (eventHandler.listeners('resume').length == 0) {
-        eventHandler.on('resume', function () {
-            dispatcher.resume();
-        });
-    }
+        if (eventHandler.listeners('pause').length == 0) {
+            eventHandler.on('pause', function () {
+                dispatcher.pause();
+            });
+        }
+        if (eventHandler.listeners('resume').length == 0) {
+            eventHandler.on('resume', function () {
+                dispatcher.resume();
+            });
+        }
+    catch (err) {
+            console.log("ERROR with play method: "+err)
+        }
 
 }
 function currentPlaying(message, serverQueue) {
