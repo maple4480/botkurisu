@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const ytdl = require('ytdl-core');
+const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const Youtube = require('simple-youtube-api');
 const client = new Discord.Client();
@@ -99,8 +99,13 @@ client.on('message', (message) => {
 async function execute(message, serverQueue) {
     const args = message.content.split(' ');
     const searchString = args.slice(1).join(' ');
+    if (args[1] === undefined) {
+        return;
+    }
+
     const url = args[1].replace(/<(.+)>/g, '$1');
-    const voiceChannel = message.member.voiceChannel;
+
+    const voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return display(message, 'You need to be in a voice channel to play music!');
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has('CONNECT') || !permissions.has('SPEAK')) {
@@ -130,7 +135,8 @@ async function execute(message, serverQueue) {
             };
             console.log(song.title + "...has been added.");
 
-            if (!serverQueue) {
+            if (queue.get(message.guild.id) == null) {
+                console.log("Generating serverQueue..");
                 const queueContruct = {
                     textChannel: message.channel,
                     voiceChannel: voiceChannel,
@@ -160,7 +166,6 @@ async function execute(message, serverQueue) {
                 try {
                     serverQueue.songs.push(song);
                     if (!currentPlaying) {
-                        voiceChannel.leave();
                         console.log('Trying to join channel.');
                         var connection = await voiceChannel.join();
                         console.log('Channel joined.');
@@ -178,8 +183,8 @@ async function execute(message, serverQueue) {
         }
         else {
             console.log("Playlist detected: " + url);
-            if (!serverQueue) {
-
+            if (queue.get(message.guild.id) == null) {
+                console.log('Bot is not playing.. will add new playlist songs to queue.');
                 const queueContruct = {
                     textChannel: message.channel,
                     voiceChannel: voiceChannel,
@@ -210,7 +215,6 @@ async function execute(message, serverQueue) {
                 //shuffle(message, queueContruct);
                 try {
                     //console.log("First song is: " + queueContruct.songs[0]);
-                    voiceChannel.leave();
                     console.log('Trying to join channel.');
                     var connection = await voiceChannel.join();
                     console.log('Channel joined.');
@@ -246,7 +250,7 @@ async function execute(message, serverQueue) {
 
 function skip(message, serverQueue) {
     try {
-        if (!message.member.voiceChannel) return display(message, 'You have to be in a voice channel to stop the music!');
+        if (!message.member.voice.channel) return display(message, 'You have to be in a voice channel to stop the music!');
         if (!serverQueue) return display(message, 'There is no song that I could skip!');
         console.log("Now skipping current song.");
         serverQueue.connection.dispatcher.end();
@@ -260,11 +264,10 @@ function skip(message, serverQueue) {
 
 function stop(message, serverQueue) {
     try {
-        if (!message.member.voiceChannel) return display(message, 'You have to be in a voice channel to stop the music!');
+        if (!message.member.voice.channel) return display(message, 'You have to be in a voice channel to stop the music!');
         serverQueue.songs = [];
         serverQueue.connection.dispatcher.end();
 
-        queue.clear();
         display(message, 'Stop requested.');
         console.log('Stop requested.');
     }
@@ -293,9 +296,10 @@ function play(guild, song) {
     console.log('Terminated time out...');
 
     currentPlaying = true;
-
-    const dispatcher = serverQueue.connection.playStream(ytdl(song.url), { filter: "audioonly" })
-        .on('end', () => {
+    DateTime = new Date();
+    console.log(DateTime.getHours() % 12 + ':' + DateTime.getMinutes() + ' - Will now play.');
+    const dispatcher = serverQueue.connection.play(await ytdl(song.url, { filter: format => ['251'], highWaterMark: 1 << 25 }), { type: 'opus' })
+        .on('finish', () => {
             console.log('Current Song ended.');
 
             if (serverQueue.voiceChannel.members.array().length <= 1
