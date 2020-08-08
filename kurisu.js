@@ -311,7 +311,7 @@ async function play(guild, song) {
                     console.log('Resources cleared.');
                     return;
                 }
-            
+
                 if (!repeat) {
                     serverQueue.songs.shift();
                 }
@@ -333,9 +333,10 @@ async function play(guild, song) {
                 dispatcher.resume();
             });
         }
+    }
     catch (err) {
             console.log("ERROR with play method: "+err)
-        }
+    }
 
 }
 function currentPlaying(message, serverQueue) {
